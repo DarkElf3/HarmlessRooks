@@ -13,8 +13,6 @@ using namespace std;
 class CHarmlessRooks {
 private:
 	vector< vector<int> > Board;
-	vector <int> UndoubtedX;
-	vector <int> UndoubtedY;
 	void PlaceRook(int X, int Y);
 	void DeleteRook(int X, int Y);
 	bool CheckForUndoubted(int X, int Y);
@@ -32,8 +30,6 @@ void CHarmlessRooks::GetData()
 {
 	cin >> BoardSize; cin.ignore();
 	Board.resize(BoardSize);
-//	UndoubtedX.resize(BoardSize * BoardSize / 2);
-//	UndoubtedY.resize(BoardSize * BoardSize / 2);
 	for (auto& BoardStr : Board) {
 		BoardStr.resize(BoardSize, 0);
 		string Row;
@@ -81,6 +77,7 @@ void CHarmlessRooks::PlaceRook(int X, int Y)
 		if (Board[X][Y + i] == INT_MAX) break;
 		Board[X][Y + i]++;
 	}
+//	cerr << "Add " << X << ' ' << Y << endl;
 }
 
 void CHarmlessRooks::DeleteRook(int X, int Y)
@@ -106,6 +103,7 @@ void CHarmlessRooks::DeleteRook(int X, int Y)
 		if (Board[X][Y + i] == INT_MAX) break;
 		Board[X][Y + i]--;
 	}
+//	cerr << "Del " << X << ' ' << Y << endl;
 }
 
 int CHarmlessRooks::PlaceRooks(int X, int Y)
@@ -115,6 +113,8 @@ int CHarmlessRooks::PlaceRooks(int X, int Y)
 	PlaceRook(X, Y);
 
 	int Undoubted = 0;
+	int UndoubtedX[100];
+	int UndoubtedY[100];
 		
 	for (int i = 0; i < BoardSize; i++)
 	{
@@ -123,10 +123,10 @@ int CHarmlessRooks::PlaceRooks(int X, int Y)
 			if (Board[i][j] == 0) {
 				if (CheckForUndoubted(i, j)) {
 					PlaceRook(i, j);
-				//	UndoubtedX[Undoubted] = i;
-				//	UndoubtedY[Undoubted] = j;
-					UndoubtedX.push_back(i);
-					UndoubtedY.push_back(j);
+					UndoubtedX[Undoubted] = i;
+					UndoubtedY[Undoubted] = j;
+				//	UndoubtedX.push_back(i);
+				//	UndoubtedY.push_back(j);
 					Undoubted++;
 				}
 			}
@@ -145,9 +145,9 @@ int CHarmlessRooks::PlaceRooks(int X, int Y)
 
 	if (Undoubted > 0) {
 		for (int i = (Undoubted - 1); i >= 0; i--) {
-			DeleteRook(UndoubtedX.back(), UndoubtedY.back());
-			UndoubtedX.pop_back();
-			UndoubtedY.pop_back();
+			DeleteRook(UndoubtedX[i], UndoubtedY[i]);
+		//	UndoubtedX.pop_back();
+		//	UndoubtedY.pop_back();
 		}
 	}
 
@@ -232,5 +232,6 @@ int main()
 	}
 	cout << Max + Undoubted;
 	HarmlessRooks.ShowBoard();
+	cin >> Max;
 }
 
