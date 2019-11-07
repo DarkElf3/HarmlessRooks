@@ -10,19 +10,27 @@ using namespace std;
 * Auto-generated code below aims at helping you parse
 * the standard input according to the problem statement.
 **/
+struct TRookInfo {
+	int PlacedRooks;
+	int FreeLinesUsed;
+};
+
 class CHarmlessRooks {
 private:
 	vector< vector<int> > Board;
+	
 	void PlaceRook(int X, int Y);
 	void DeleteRook(int X, int Y);
 	bool CheckForUndoubted(int X, int Y);
 	bool CheckHorizontal(int X, int Y);
 	bool CheckVertical(int X, int Y);
+	int FreeLinesOccupied(int X, int Y);
 public:
 	int BoardSize;
+	vector<int> FreeRow, FreeCol, HenceRow, HenceCol;
 	void GetData();
 	void ShowBoard();
-	int PlaceRooks(int X, int Y);
+	TRookInfo PlaceRooks(int X, int Y);
 	int CheckAndPlaceUndoubtedRooks();
 };
 
@@ -37,6 +45,30 @@ void CHarmlessRooks::GetData()
 		for (int i = 0; i < BoardSize; i++) {
 			if (Row[i] == 'X')
 				BoardStr[i] = INT_MAX;
+		}
+	}
+	for (int i = 0; i < BoardSize; i++)
+	{
+		for (int j = 0; j < BoardSize; j++)
+		{
+			if (Board[i][j] == INT_MAX) {
+				HenceRow.push_back(i);
+				break;
+			}
+			if (j == BoardSize - 1)
+				FreeRow.push_back(i);
+		}
+	}
+	for (int i = 0; i < BoardSize; i++)
+	{
+		for (int j = 0; j < BoardSize; j++)
+		{
+			if (Board[j][i] == INT_MAX) {
+				HenceCol.push_back(i);
+				break;
+			}
+			if (j == BoardSize - 1)
+				FreeCol.push_back(i);
 		}
 	}
 }
@@ -106,55 +138,128 @@ void CHarmlessRooks::DeleteRook(int X, int Y)
 //	cerr << "Del " << X << ' ' << Y << endl;
 }
 
-int CHarmlessRooks::PlaceRooks(int X, int Y)
+int CHarmlessRooks::FreeLinesOccupied(int X, int Y)
 {
-	if (Board[X][Y] != 0) return 0;
+	int Result = 0;
+	for (int i : FreeRow) 
+	{
+		if (i == X) {
+			Result++;
+			break;
+		}
+	}
+	for (int i : FreeCol) 
+	{
+		if (i == Y) {
+			Result++;
+			break;
+		}
+	}
+	return Result;
+}
+
+TRookInfo CHarmlessRooks::PlaceRooks(int X, int Y)
+{
+	TRookInfo Max = { 0, 0 };
+	if (Board[X][Y] != 0) return Max;
 
 	PlaceRook(X, Y);
 
-	int Undoubted = 0;
+	TRookInfo Undoubted = { 0, 0 };
+	
 	int UndoubtedX[100];
 	int UndoubtedY[100];
 		
-	for (int i = 0; i < BoardSize; i++)
+	for (int i = 0; i < BoardSize; i++) // TODO сделать повтор если поставили хоть одну 
 	{
 		for (int j = 0; j < BoardSize; j++)
 		{
 			if (Board[i][j] == 0) {
 				if (CheckForUndoubted(i, j)) {
 					PlaceRook(i, j);
-					UndoubtedX[Undoubted] = i;
-					UndoubtedY[Undoubted] = j;
-				//	UndoubtedX.push_back(i);
-				//	UndoubtedY.push_back(j);
-					Undoubted++;
+					UndoubtedX[Undoubted.PlacedRooks] = i;
+					UndoubtedY[Undoubted.PlacedRooks] = j;
+					Undoubted.FreeLinesUsed += FreeLinesOccupied(i, j);
+					Undoubted.PlacedRooks++;
 				}
 			}
 		}
 	}
 
-	int Max = 0;
-	for (int i = 0; i < BoardSize; i++)
+	
+//	for (int i = 0; i < BoardSize; i++)
+	for (int i : HenceRow)
 	{
+//		for (int j = 0; j < BoardSize; j++)
+		for (int j : HenceCol)
+		{
+			auto Cur = PlaceRooks(i, j);
+			if (Cur.PlacedRooks > Max.PlacedRooks) Max = Cur;
+		}
+	}
+//	Max.PlacedRooks += Undoubted.PlacedRooks;
+//	Max.RooksOnFreeLines += Undoubted.RooksOnFreeLines;
+
+	int Maximum = FreeRow.size() + FreeCol.size() - Max.FreeLinesUsed - Undoubted.FreeLinesUsed;
+
+	bool MaxFound = (Max.PlacedRooks < Maximum);
+
+	for (int i : FreeRow)
+	{
+		if (MaxFound) break;
 		for (int j = 0; j < BoardSize; j++)
 		{
-			int Cur = PlaceRooks(i, j);
-			if (Cur > Max) Max = Cur;
+			auto Cur = PlaceRooks(i, j);
+			if (Cur.PlacedRooks > Max.PlacedRooks) Max = Cur;
+			if (Cur.PlacedRooks == Maximum) {
+				MaxFound = true;
+				break;
+			}
 		}
 	}
 
-	if (Undoubted > 0) {
-		for (int i = (Undoubted - 1); i >= 0; i--) {
+	for (int i = 0; i < BoardSize; i++)
+	{
+		if (MaxFound) break;
+		for (int j : FreeCol)
+		{
+			auto Cur = PlaceRooks(i, j);
+			if (Cur.PlacedRooks > Max.PlacedRooks) Max = Cur;
+			if (Cur.PlacedRooks == Maximum) {
+				MaxFound = true;
+				break;
+			}
+		}
+	}
+
+	for (int i : FreeRow) // TODO заменить максимальное количество строк или столбцов
+	{
+		if (MaxFound) break;
+		for (int j : FreeCol)
+		{
+			auto Cur = PlaceRooks(i, j);
+			if (Cur.PlacedRooks > Max.PlacedRooks) Max = Cur;
+			if (Cur.PlacedRooks == Maximum) {
+				MaxFound = true;
+				break;
+			}
+		}
+	}
+
+
+	if (Undoubted.PlacedRooks > 0) {
+		for (int i = (Undoubted.PlacedRooks - 1); i >= 0; i--) {
 			DeleteRook(UndoubtedX[i], UndoubtedY[i]);
-		//	UndoubtedX.pop_back();
-		//	UndoubtedY.pop_back();
 		}
 	}
 
 	DeleteRook(X, Y);
 
-	Max++;
-	return Max + Undoubted;
+	Max.PlacedRooks += Undoubted.PlacedRooks;
+	Max.FreeLinesUsed += Undoubted.FreeLinesUsed;
+	Max.PlacedRooks++;
+	Max.FreeLinesUsed += FreeLinesOccupied(X, Y);
+	return Max;
 }
 
 bool CHarmlessRooks::CheckHorizontal(int X, int Y)
@@ -200,6 +305,20 @@ int CHarmlessRooks::CheckAndPlaceUndoubtedRooks()
 				if (CheckForUndoubted(i, j)) {
 					PlaceRook(i, j);
 					PlacedRooks++;
+					for (size_t k = 0; k < FreeRow.size(); k++)
+					{
+						if (FreeRow[k] == i) {
+							FreeRow.erase(FreeRow.begin() + k);
+							break;
+						}
+					}
+					for (size_t k = 0; k < FreeCol.size(); k++)
+					{
+						if (FreeCol[k] == j) {
+							FreeCol.erase(FreeCol.begin() + k);
+							break;
+						}
+					}
 				}
 			}
 		}
@@ -220,13 +339,15 @@ int main()
 	HarmlessRooks.GetData();
 	int Undoubted = HarmlessRooks.CheckAndPlaceUndoubtedRooks();
 	int Max = 0;
-	for (int i = 0; i < HarmlessRooks.BoardSize; i++)
+//	for (int i = 0; i < HarmlessRooks.BoardSize; i++)
+	for (int i : HarmlessRooks.HenceRow)
 	{
-		for (int j = 0; j < HarmlessRooks.BoardSize; j++)
+//		for (int j = 0; j < HarmlessRooks.BoardSize; j++)
+		for (int j : HarmlessRooks.HenceCol)
 		{
-			int Cur = HarmlessRooks.PlaceRooks(i, j);
-			cerr << Cur + Undoubted << ' ';
-			if (Cur > Max) Max = Cur;
+			auto Cur = HarmlessRooks.PlaceRooks(i, j);
+			cerr << Cur.PlacedRooks + Undoubted << ' ';
+			if (Cur.PlacedRooks > Max) Max = Cur.PlacedRooks;
 		}
 		cerr << endl;
 	}
