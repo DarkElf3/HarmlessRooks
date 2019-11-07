@@ -207,7 +207,7 @@ TRookInfo CHarmlessRooks::PlaceRooks(int X, int Y)
 	for (int i : FreeRow)
 	{
 		if (MaxFound) break;
-		for (int j = 0; j < BoardSize; j++)
+		for (int j : HenceCol)
 		{
 			auto Cur = PlaceRooks(i, j);
 			if (Cur.PlacedRooks > Max.PlacedRooks) Max = Cur;
@@ -218,7 +218,7 @@ TRookInfo CHarmlessRooks::PlaceRooks(int X, int Y)
 		}
 	}
 
-	for (int i = 0; i < BoardSize; i++)
+	for (int i : HenceRow)
 	{
 		if (MaxFound) break;
 		for (int j : FreeCol)
