@@ -20,11 +20,13 @@ private:
 	bool CheckVertical(int X, int Y);
 	void FindAndPlaceUndoubted(int *UndoubtedX, int *UndoubtedY, int &Undoubted);
 	int FindAndPlaceUndoubted();
-	void FindAndPlaceUndoubtedTwoPairs(int *UndoubtedX, int *UndoubtedY, int &Undoubted);
-	int FindAndPlaceUndoubtedTwoPairs();
-	int SearchForPair(int X, int Y1, int Y2);
+	void FindAndPlaceTwoPairsHorizontal(int *UndoubtedX, int *UndoubtedY, int &Undoubted);
+	void FindAndPlaceTwoPairsVertical(int *UndoubtedX, int *UndoubtedY, int &Undoubted);
+	int FindAndPlaceTwoPairsVertical();
+	int FindAndPlaceTwoPairsHorizontal();
+	int SearchForPairRow(int X, int Y1, int Y2);
 	int SearchForPairCol(int X1, int Y, int X2);
-	bool CheckPair(int X, int Y1, int Y2);
+	bool CheckPairHorizontal(int X, int Y1, int Y2);
 	bool CheckPairVertical(int Y, int X1, int X2);
 public:
 	int BoardSize;
@@ -156,7 +158,7 @@ int CHarmlessRooks::FindAndPlaceUndoubted()
 	return PlacedRooks;
 }
 
-bool CHarmlessRooks::CheckPair(int X, int Y1, int Y2)
+bool CHarmlessRooks::CheckPairHorizontal(int X, int Y1, int Y2)
 {
 	for (int j = Y1 - 1; j >= 0; j--) {
 		if (Board[X][j] == 0) return false;
@@ -188,13 +190,13 @@ bool CHarmlessRooks::CheckPairVertical(int Y, int X1, int X2)
 	return true;
 }
 
-int CHarmlessRooks::SearchForPair(int X, int Y1, int Y2)
+int CHarmlessRooks::SearchForPairRow(int X, int Y1, int Y2)
 {
 	for (int i = X + 1; i < BoardSize; i++) {
 		if (Board[i][Y1] == INT_MAX) break;
 		if (Board[i][Y2] == INT_MAX) break;
 		if ((Board[i][Y1] == 0) && (Board[i][Y2] == 0)) {
-			if (CheckPair(i, Y1, Y2))
+			if (CheckPairHorizontal(i, Y1, Y2))
 				return i;
 		}
 	}
@@ -202,7 +204,7 @@ int CHarmlessRooks::SearchForPair(int X, int Y1, int Y2)
 		if (Board[i][Y1] == INT_MAX) break;
 		if (Board[i][Y2] == INT_MAX) break;
 		if ((Board[i][Y1] == 0) && (Board[i][Y2] == 0)) {
-			if (CheckPair(i, Y1, Y2))
+			if (CheckPairHorizontal(i, Y1, Y2))
 				return i;
 		}
 	}
@@ -230,7 +232,7 @@ int CHarmlessRooks::SearchForPairCol(int X1, int Y, int X2)
 	return -1;
 }
 
-int CHarmlessRooks::FindAndPlaceUndoubtedTwoPairs()
+int CHarmlessRooks::FindAndPlaceTwoPairsVertical()
 {
 	int NewRooks = 0;
 	for (int j = 0; j < BoardSize; j++) {
@@ -271,7 +273,48 @@ int CHarmlessRooks::FindAndPlaceUndoubtedTwoPairs()
 	return NewRooks;
 }
 
-void CHarmlessRooks::FindAndPlaceUndoubtedTwoPairs(int *UndoubtedX, int *UndoubtedY, int &Undoubted)
+int CHarmlessRooks::FindAndPlaceTwoPairsHorizontal()
+{
+	int NewRooks = 0;
+	for (int i = 0; i < BoardSize; i++) {
+		for (int j = 0; j < BoardSize; j++) {
+			if (Board[i][j] == 0) {
+				int k = j + 1;
+				bool TwoFound = false;
+				bool ThreeOrMore = false;
+				int Pair;
+				while (k < BoardSize) {
+					if (Board[i][k] == 0) {
+						if (TwoFound) {
+							ThreeOrMore = true;
+						}
+						else {
+							TwoFound = true;
+							Pair = k;
+						}
+					}
+					if (Board[i][k] == INT_MAX) {
+						break;
+					}
+					k++;
+				}
+				if (!ThreeOrMore && TwoFound) {
+					int PairRow = SearchForPairRow(i, j, Pair);
+					if (PairRow >= 0) {
+						PlaceRook(i, j);
+						NewRooks++;
+						PlaceRook(PairRow, Pair);
+						NewRooks++;
+					}
+				}
+				j = k;
+			}
+		}
+	}
+	return NewRooks;
+}
+
+void CHarmlessRooks::FindAndPlaceTwoPairsHorizontal(int *UndoubtedX, int *UndoubtedY, int &Undoubted)
 {
 	for (int i = 0; i < BoardSize; i++) {
 		for (int j = 0; j < BoardSize; j++) {
@@ -296,7 +339,7 @@ void CHarmlessRooks::FindAndPlaceUndoubtedTwoPairs(int *UndoubtedX, int *Undoubt
 					k++;
 				}
 				if (!ThreeOrMore && TwoFound) {
-					int PairRow = SearchForPair(i, j, Pair);
+					int PairRow = SearchForPairRow(i, j, Pair);
 					if (PairRow >= 0) {
 //						ShowCurBoard();
 						PlaceRook(i, j);
@@ -316,6 +359,50 @@ void CHarmlessRooks::FindAndPlaceUndoubtedTwoPairs(int *UndoubtedX, int *Undoubt
 
 }
 
+void CHarmlessRooks::FindAndPlaceTwoPairsVertical(int *UndoubtedX, int *UndoubtedY, int &Undoubted)
+{
+	for (int j = 0; j < BoardSize; j++) {
+		for (int i = 0; i < BoardSize; i++) {
+			if (Board[i][j] == 0) {
+				int k = i + 1;
+				bool TwoFound = false;
+				bool ThreeOrMore = false;
+				int Pair;
+				while (k < BoardSize) {
+					if (Board[k][j] == 0) {
+						if (TwoFound) {
+							ThreeOrMore = true;
+						}
+						else {
+							TwoFound = true;
+							Pair = k;
+						}
+					}
+					if (Board[k][j] == INT_MAX) {
+						break;
+					}
+					k++;
+				}
+				if (!ThreeOrMore && TwoFound) {
+					int PairCol = SearchForPairCol(i, j, Pair);
+					if (PairCol >= 0) {
+						PlaceRook(i, j);
+						UndoubtedX[Undoubted] = i;
+						UndoubtedY[Undoubted] = j;
+						Undoubted++;
+						PlaceRook(Pair, PairCol);
+						UndoubtedX[Undoubted] = Pair;
+						UndoubtedY[Undoubted] = PairCol;
+						Undoubted++;
+					}
+				}
+				i = k;
+			}
+		}
+	}
+
+}
+
 int CHarmlessRooks::PlaceRooks(int X, int Y)
 {
 	if (Board[X][Y] != 0) return 0;
@@ -329,7 +416,8 @@ int CHarmlessRooks::PlaceRooks(int X, int Y)
 	do {
 		PlacedRooks = Undoubted;
 		FindAndPlaceUndoubted(UndoubtedX, UndoubtedY, Undoubted);
-		FindAndPlaceUndoubtedTwoPairs(UndoubtedX, UndoubtedY, Undoubted);
+		FindAndPlaceTwoPairsHorizontal(UndoubtedX, UndoubtedY, Undoubted);
+		FindAndPlaceTwoPairsVertical(UndoubtedX, UndoubtedY, Undoubted);
 	} while (PlacedRooks < Undoubted);
 
 	int Max = 0;
@@ -384,19 +472,17 @@ bool CHarmlessRooks::CheckForUndoubted(int X, int Y)
 
 int CHarmlessRooks::CheckAndPlaceUndoubtedRooks()
 {
-	int NewRooks;
-	int UndoubtedX[100];
-	int UndoubtedY[100];
+	int PrevRooks;
 	int  PlacedRooks = 0;
 	do {
 		do {
-			NewRooks = FindAndPlaceUndoubted();
-			PlacedRooks += NewRooks;
-		} while (NewRooks != 0);
-		FindAndPlaceUndoubtedTwoPairs(UndoubtedX, UndoubtedY, NewRooks);
-		PlacedRooks += NewRooks;
-		PlacedRooks += FindAndPlaceUndoubtedTwoPairs();
-	} while (NewRooks != 0);
+			PrevRooks = PlacedRooks;
+			PlacedRooks += FindAndPlaceUndoubted();
+		} while (PlacedRooks != PrevRooks);
+		PrevRooks = PlacedRooks;
+		PlacedRooks += FindAndPlaceTwoPairsHorizontal();
+		PlacedRooks += FindAndPlaceTwoPairsVertical();
+	} while (PlacedRooks != PrevRooks);
 	return PlacedRooks;
 }
 
@@ -405,14 +491,15 @@ int main()
 	CHarmlessRooks HarmlessRooks;
 	HarmlessRooks.GetData();
 	int Undoubted = HarmlessRooks.CheckAndPlaceUndoubtedRooks();
+//	HarmlessRooks.ShowCurBoard();
 	int Max = 0;
 	for (int i = 0; i < HarmlessRooks.BoardSize; i++) {
 		for (int j = 0; j < HarmlessRooks.BoardSize; j++) {
 			int Cur = HarmlessRooks.PlaceRooks(i, j);
-			cerr << Cur + Undoubted << ' ';
+//			cerr << Cur + Undoubted << ' ';
 			if (Cur > Max) Max = Cur;
 		}
-		cerr << endl;
+//		cerr << endl;
 	}
 	cout << Max + Undoubted;
 	HarmlessRooks.ShowBoard();
