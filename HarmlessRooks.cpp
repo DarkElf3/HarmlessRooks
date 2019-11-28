@@ -21,6 +21,8 @@ private:
 	bool CheckHorizontal(int X, int Y);
 	bool CheckVertical(int X, int Y);
 	int CheckTripleHorizontal(int X, int Y1, int Y2, int Y3);
+	int CheckTripleVertical(int Y, int X1, int X2, int X3);
+	bool CheckThreeVertical(int Y, int X1, int X2, int& X3);
 	bool CheckThreeHorizontal(int X, int Y1, int Y2, int& Y3);
 	void FindAndPlaceUndoubted(int *UndoubtedX, int *UndoubtedY, int &Undoubted);
 	int FindAndPlaceUndoubted();
@@ -28,13 +30,19 @@ private:
 	void FindAndPlaceTwoPairsVertical(int *UndoubtedX, int *UndoubtedY, int &Undoubted);
 	int FindAndPlaceTwoPairsVertical();
 	int FindAndPlaceTwoPairsHorizontal();
+	int FindAndPlaceThreeMatchingVertical();
+	int FindAndPlaceThreeMatchingHorizontal();
 	int FindAndPlaceTripleHorizontal();
+	int FindAndPlaceTripleVertical();
 	int SearchForPairRow(int X, int Y1, int Y2);
 	void PlaceThreeRooks(int X1, int X2, int X3, int Y1, int Y2, int Y3);
 	int SearchForMatchingThreeRows(int X, int Y1, int Y2, int Y3);
+	int SearchForMatchingThreeCols(int Y, int X1, int X2, int X3);
 	int SearchForThreeMatchingTwoRow(int X, int Y1, int Y2);
+	int SearchForThreeMatchingTwoCol(int Y, int X1, int X2);
 	int SearchForThirdRow(int X, int Y1, int Y2, int Y3);
-	int SearchForPairCol(int X1, int Y, int X2);
+	int SearchForThirdCol(int Y, int X1, int X2, int X3);
+	int SearchForPairCol(int Y, int X1, int X2);
 	bool CheckPairHorizontal(int X, int Y1, int Y2);
 	bool CheckPairVertical(int Y, int X1, int X2);
 public:
@@ -169,6 +177,11 @@ int CHarmlessRooks::FindAndPlaceUndoubted()
 
 bool CHarmlessRooks::CheckPairHorizontal(int X, int Y1, int Y2)
 {
+	if (Y1 > Y2) { 
+		Y1 ^= Y2;
+		Y2 ^= Y1;
+		Y1 ^= Y2;
+	}
 	for (int j = Y1 - 1; j >= 0; j--) {
 		if (Board[X][j] == 0) return false;
 		if (Board[X][j] == INT_MAX) break;
@@ -185,16 +198,21 @@ bool CHarmlessRooks::CheckPairHorizontal(int X, int Y1, int Y2)
 
 bool CHarmlessRooks::CheckPairVertical(int Y, int X1, int X2)
 {
-	for (int j = X1 - 1; j >= 0; j--) {
-		if (Board[j][Y] == 0) return false;
-		if (Board[j][Y] == INT_MAX) break;
+	if (X1 > X2) { 
+		X1 ^= X2;
+		X2 ^= X1;
+		X1 ^= X2;
 	}
-	for (int j = X1 + 1; j < X2; j++) {
-		if (Board[j][Y] == 0) return false;
+	for (int i = X1 - 1; i >= 0; i--) {
+		if (Board[i][Y] == 0) return false;
+		if (Board[i][Y] == INT_MAX) break;
 	}
-	for (int j = X2 + 1; j < BoardSize; j++) {
-		if (Board[j][Y] == 0) return false;
-		if (Board[j][Y] == INT_MAX) break;
+	for (int i = X1 + 1; i < X2; i++) {
+		if (Board[i][Y] == 0) return false;
+	}
+	for (int i = X2 + 1; i < BoardSize; i++) {
+		if (Board[i][Y] == 0) return false;
+		if (Board[i][Y] == INT_MAX) break;
 	}
 	return true;
 }
@@ -220,25 +238,195 @@ int CHarmlessRooks::SearchForPairRow(int X, int Y1, int Y2)
 	return HR_LINE_NOT_FOUND;
 }
 
-int CHarmlessRooks::SearchForPairCol(int X1, int Y, int X2)
+int CHarmlessRooks::SearchForPairCol(int Y, int X1, int X2)
 {
-	for (int i = Y + 1; i < BoardSize; i++) {
-		if (Board[X1][i] == INT_MAX) break;
-		if (Board[X2][i] == INT_MAX) break;
-		if ((Board[X1][i] == 0) && (Board[X2][i] == 0)) {
-			if (CheckPairVertical(i, X1, X2))
-				return i;
+	for (int j = Y + 1; j < BoardSize; j++) {
+		if (Board[X1][j] == INT_MAX) break;
+		if (Board[X2][j] == INT_MAX) break;
+		if ((Board[X1][j] == 0) && (Board[X2][j] == 0)) {
+			if (CheckPairVertical(j, X1, X2))
+				return j;
 		}
 	}
-	for (int i = Y - 1; i >= 0; i--) {
-		if (Board[X1][i] == INT_MAX) break;
-		if (Board[X2][i] == INT_MAX) break;
-		if ((Board[X1][i] == 0) && (Board[X2][i] == 0)) {
-			if (CheckPairVertical(i, X1, X2))
-				return i;
+	for (int j = Y - 1; j >= 0; j--) {
+		if (Board[X1][j] == INT_MAX) break;
+		if (Board[X2][j] == INT_MAX) break;
+		if ((Board[X1][j] == 0) && (Board[X2][j] == 0)) {
+			if (CheckPairVertical(j, X1, X2))
+				return j;
 		}
 	}
-	return -1;
+	return HR_LINE_NOT_FOUND;
+}
+
+bool CHarmlessRooks::CheckThreeVertical(int Y, int X1, int X2, int& X3)
+{
+	int FreeFields = 0;
+	for (int i = X1 - 1; i >= 0; i--) {
+		if (Board[i][Y] == 0) {
+			FreeFields++;
+			X3 = i;
+		}
+		if (Board[i][Y] == INT_MAX) break;
+	}
+	for (int i = X1 + 1; i < X2; i++) {
+		if (Board[i][Y] == INT_MAX) return false;
+		if (Board[i][Y] == 0) {
+			FreeFields++;
+			X3 = i;
+		}
+	}
+	for (int i = X2 + 1; i < BoardSize; i++) {
+		if (Board[i][Y] == 0) {
+			FreeFields++;
+			X3 = i;
+		}
+		if (Board[i][Y] == INT_MAX) break;
+	}
+	return (FreeFields == 1);
+}
+
+int CHarmlessRooks::CheckTripleVertical(int Y, int X1, int X2, int X3)
+{
+	int FreeFields = 0;
+	if (Board[X1][Y] == 0) FreeFields++;
+	if (Board[X2][Y] == 0) FreeFields++;
+	if (Board[X3][Y] == 0) FreeFields++;
+	if ((FreeFields == 2) || (FreeFields == 3)) {
+		for (int i = X1 - 1; i >= 0; i--) {
+			if (Board[i][Y] == 0) return 0;
+			if (Board[i][Y] == INT_MAX) break;
+		}
+		for (int i = X3 + 1; i < BoardSize; i++) {
+			if (Board[i][Y] == 0) return 0;
+			if (Board[i][Y] == INT_MAX) break;
+		}
+		int FreeFieldsFromX1toX3 = 0;
+		for (int i = X1; i <= X3; i++) {
+			if (Board[i][Y] == INT_MAX) return 0; // уточнить
+			if (Board[i][Y] == 0)
+				FreeFieldsFromX1toX3++;
+			if (FreeFieldsFromX1toX3 > FreeFields) return 0;
+		}
+	}
+	return FreeFields;
+}
+
+int CHarmlessRooks::SearchForThirdCol(int Y, int X1, int X2, int X3)
+{
+	int FreeFields;
+	int p1 = X1, p2 = X2, p3 = X3;
+	if (X3 < X1) {
+		p1 = X3;
+		p2 = X1;
+		p3 = X2;
+	}
+	if ((X3 > X1) && (X3 < X2)) {
+		p2 = X3;
+		p3 = X2;
+	}
+	for (int j = Y + 1; j < BoardSize; j++) {
+		if (Board[X1][j] == INT_MAX) break;
+		if (Board[X2][j] == INT_MAX) break;
+		if (Board[X3][j] == INT_MAX) break;
+		FreeFields = CheckTripleVertical(j, p1, p2, p3);
+		if (FreeFields == 3) {
+			return j;
+		}
+	}
+	for (int j = Y - 1; j >= 0; j--) {
+		if (Board[X1][j] == INT_MAX) break;
+		if (Board[X2][j] == INT_MAX) break;
+		if (Board[X3][j] == INT_MAX) break;
+		FreeFields = CheckTripleVertical(j, p1, p2, p3);
+		if (FreeFields == 3) {
+			return j;
+		}
+	}
+	return HR_LINE_NOT_FOUND;
+}
+
+int CHarmlessRooks::SearchForThreeMatchingTwoCol(int Y, int X1, int X2)
+{
+	int X3;
+	for (int j = Y + 1; j < BoardSize; j++) {
+		if (Board[X1][j] == INT_MAX) break;
+		if (Board[X2][j] == INT_MAX) break;
+		if ((Board[X1][j] == 0) && (Board[X2][j] == 0)) {
+			if (CheckThreeVertical(j, X1, X2, X3)) {
+				int ThirdCol = SearchForPairCol(j, X1, X3);
+				if (ThirdCol != HR_LINE_NOT_FOUND) {
+					PlaceThreeRooks(X1, X2, X3, Y, j, ThirdCol);
+					return 3;
+				}
+				ThirdCol = SearchForPairCol(j, X2, X3);
+				if (ThirdCol != HR_LINE_NOT_FOUND) {
+					PlaceThreeRooks(X1, X2, X3, Y, j, ThirdCol);
+					return 3;
+				}
+				ThirdCol = SearchForThirdCol(j, X1, X2, X3);
+				if (ThirdCol != HR_LINE_NOT_FOUND) {
+					PlaceThreeRooks(X1, X2, X3, Y, j, ThirdCol);
+					return 3;
+				}
+			}
+		}
+	}
+	for (int j = Y - 1; j >= 0; j--) {
+		if (Board[X1][j] == INT_MAX) break;
+		if (Board[X2][j] == INT_MAX) break;
+		if ((Board[X1][j] == 0) && (Board[X2][j] == 0)) {
+			if (CheckThreeVertical(j, X1, X2, X3)) {
+				int ThirdCol = SearchForPairCol(j, X1, X3);
+				if (ThirdCol != HR_LINE_NOT_FOUND) {
+					PlaceThreeRooks(X1, X2, X3, Y, j, ThirdCol);
+					return 3;
+				}
+				ThirdCol = SearchForPairCol(j, X2, X3);
+				if (ThirdCol != HR_LINE_NOT_FOUND) {
+					PlaceThreeRooks(X1, X2, X3, Y, j, ThirdCol);
+					return 3;
+				}
+				ThirdCol = SearchForThirdCol(j, X1, X2, X3);
+				if (ThirdCol != HR_LINE_NOT_FOUND) {
+					PlaceThreeRooks(X1, X2, X3, Y, j, ThirdCol);
+					return 3;
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+int CHarmlessRooks::FindAndPlaceThreeMatchingVertical()
+{
+	int NewRooks = 0;
+	for (int j = 0; j < BoardSize; j++) {
+		for (int i = 0; i < BoardSize; i++) {
+			if (Board[i][j] == 0) {
+				int k = i + 1;
+				int FreeFields = 0;
+				int Pair;
+				while (k < BoardSize) {
+					if (Board[k][j] == 0) {
+						FreeFields++;
+						if (FreeFields == 1) {
+							Pair = k;
+						}
+					}
+					if (Board[k][j] == INT_MAX) {
+						break;
+					}
+					k++;
+				}
+				if (FreeFields == 1) {
+						NewRooks += SearchForThreeMatchingTwoCol(j, i, Pair);
+				}
+				i = k;
+			}
+		}
+	}
+	return NewRooks;
 }
 
 int CHarmlessRooks::FindAndPlaceTwoPairsVertical()
@@ -248,15 +436,12 @@ int CHarmlessRooks::FindAndPlaceTwoPairsVertical()
 		for (int i = 0; i < BoardSize; i++) {
 			if (Board[i][j] == 0) {
 				int k = i + 1;
-				bool TwoFound = false;
-				bool ThreeOrMore = false;
+				int FreeFields = 0;
 				int Pair;
 				while (k < BoardSize) {
 					if (Board[k][j] == 0) {
-						if (TwoFound) {
-							ThreeOrMore = true;
-						} else {
-							TwoFound = true;
+						FreeFields++;
+						if (FreeFields == 1) {
 							Pair = k;
 						}
 					}
@@ -265,14 +450,14 @@ int CHarmlessRooks::FindAndPlaceTwoPairsVertical()
 					}
 					k++;
 				}
-				if (!ThreeOrMore && TwoFound) {
-					int PairCol = SearchForPairCol(i, j, Pair);
+				if (FreeFields == 1) {
+					int PairCol = SearchForPairCol(j, i, Pair);
 					if (PairCol >= 0) {
 						PlaceRook(i, j);
 						NewRooks++;
 						PlaceRook(Pair, PairCol);
 						NewRooks++;
-					}
+					} 
 				}
 				i = k;
 			}
@@ -298,6 +483,7 @@ int CHarmlessRooks::CheckTripleHorizontal(int X, int Y1, int Y2, int Y3)
 		}
 		int FreeFieldsFromY1toY3 = 0;
 		for (int j = Y1; j <= Y3; j++) {
+			if (Board[X][j] == INT_MAX) return 0; // уточнить
 			if (Board[X][j] == 0) 
 				FreeFieldsFromY1toY3++;
 			if (FreeFieldsFromY1toY3 > FreeFields) return 0;
@@ -360,6 +546,7 @@ bool CHarmlessRooks::CheckThreeHorizontal(int X, int Y1, int Y2, int& Y3)
 		if (Board[X][j] == INT_MAX) break;
 	}
 	for (int j = Y1 + 1; j < Y2; j++) {
+		if (Board[X][j] == INT_MAX) return false;
 		if (Board[X][j] == 0) {
 			FreeFields++;
 			Y3 = j;
@@ -378,11 +565,21 @@ bool CHarmlessRooks::CheckThreeHorizontal(int X, int Y1, int Y2, int& Y3)
 int CHarmlessRooks::SearchForThirdRow(int X, int Y1, int Y2, int Y3)
 {
 	int FreeFields;
+	int p1 = Y1, p2 = Y2, p3 = Y3;
+	if (Y3 < Y1) {
+		p1 = Y3;
+		p2 = Y1;
+		p3 = Y2;
+	}
+	if ((Y3 > Y1) && (Y3 < Y2)) {
+		p2 = Y3;
+		p3 = Y2;
+	}
 	for (int i = X + 1; i < BoardSize; i++) {
 		if (Board[i][Y1] == INT_MAX) break;
 		if (Board[i][Y2] == INT_MAX) break;
 		if (Board[i][Y3] == INT_MAX) break;
-		FreeFields = CheckTripleHorizontal(i, Y1, Y2, Y3);
+		FreeFields = CheckTripleHorizontal(i, p1, p2, p3);
 		if (FreeFields == 3) {
 			return i;
 		}
@@ -391,7 +588,7 @@ int CHarmlessRooks::SearchForThirdRow(int X, int Y1, int Y2, int Y3)
 		if (Board[i][Y1] == INT_MAX) break;
 		if (Board[i][Y2] == INT_MAX) break;
 		if (Board[i][Y3] == INT_MAX) break;
-		FreeFields = CheckTripleHorizontal(i, Y1, Y2, Y3);
+		FreeFields = CheckTripleHorizontal(i, p1, p2, p3);
 		if (FreeFields == 3) {
 			return i;
 		}
@@ -451,28 +648,19 @@ int CHarmlessRooks::SearchForThreeMatchingTwoRow(int X, int Y1, int Y2)
 	return 0;
 }
 
-int CHarmlessRooks::FindAndPlaceTwoPairsHorizontal()
+int CHarmlessRooks::FindAndPlaceThreeMatchingHorizontal()
 {
 	int NewRooks = 0;
 	for (int i = 0; i < BoardSize; i++) {
 		for (int j = 0; j < BoardSize; j++) {
 			if (Board[i][j] == 0) {
 				int k = j + 1;
-				bool TwoFound = false;
-				bool ThreeFound = false;
-				bool FourOrMore = false;
-				int Pair, Third;
+				int FreeFields = 0;
+				int Pair;
 				while (k < BoardSize) {
 					if (Board[i][k] == 0) {
-						if (TwoFound) {
-							if (ThreeFound) {
-								FourOrMore = true;
-							} else {
-								ThreeFound = true;
-								Third = k;
-							}
-						} else {
-							TwoFound = true;
+						FreeFields++;
+						if (FreeFields == 1) {
 							Pair = k;
 						}
 					}
@@ -481,18 +669,117 @@ int CHarmlessRooks::FindAndPlaceTwoPairsHorizontal()
 					}
 					k++;
 				}
-				if (!ThreeFound && TwoFound) {
+				if (FreeFields == 1) {
+					NewRooks += SearchForThreeMatchingTwoRow(i, j, Pair);
+				}
+				j = k;
+			}
+		}
+	}
+	return NewRooks;
+}
+
+int CHarmlessRooks::FindAndPlaceTwoPairsHorizontal()
+{
+	int NewRooks = 0;
+	for (int i = 0; i < BoardSize; i++) {
+		for (int j = 0; j < BoardSize; j++) {
+			if (Board[i][j] == 0) {
+				int k = j + 1;
+				int FreeFields = 0;
+				int Pair;
+				while (k < BoardSize) {
+					if (Board[i][k] == 0) {
+						FreeFields++;
+						if (FreeFields == 1) {
+							Pair = k;
+						}
+					}
+					if (Board[i][k] == INT_MAX) {
+						break;
+					}
+					k++;
+				}
+				if (FreeFields == 1) {
 					int PairRow = SearchForPairRow(i, j, Pair);
 					if (PairRow >= 0) {
 						PlaceRook(i, j);
 						NewRooks++;
 						PlaceRook(PairRow, Pair);
 						NewRooks++;
-					}
-					NewRooks += SearchForThreeMatchingTwoRow(i, j, Pair);
+					} 
 				}
-//				if (!FourOrMore && ThreeFound)
-//					NewRooks += SearchForMatchingThreeRows(i, j, Pair, Third);
+				j = k;
+			}
+		}
+	}
+	return NewRooks;
+}
+
+int CHarmlessRooks::SearchForMatchingThreeCols(int Y, int X1, int X2, int X3)
+{
+	int FirstLine = -1;
+	int FreeFields;
+	for (int j = Y + 1; j < BoardSize; j++) {
+		if (Board[X1][j] == INT_MAX) break;
+		if (Board[X2][j] == INT_MAX) break;
+		if (Board[X3][j] == INT_MAX) break;
+		FreeFields = CheckTripleVertical(j, X1, X2, X3);
+		if (FreeFields > 1) {
+			if (FirstLine == -1) {
+				FirstLine = j;
+			}
+			else {
+				PlaceThreeRooks(X1, X2, X3, Y, j, FirstLine);
+				return 3;
+			}
+		}
+	}
+	for (int j = Y - 1; j >= 0; j--) {
+		if (Board[X1][j] == INT_MAX) break;
+		if (Board[X2][j] == INT_MAX) break;
+		if (Board[X3][j] == INT_MAX) break;
+		FreeFields = CheckTripleVertical(j, X1, X2, X3);
+		if (FreeFields > 1) {
+			if (FirstLine == -1) {
+				FirstLine = j;
+			}
+			else {
+				PlaceThreeRooks(X1, X2, X3, Y, j, FirstLine);
+				return 3;
+			}
+		}
+	}
+	return 0;
+}
+
+int CHarmlessRooks::FindAndPlaceTripleVertical()
+{
+	int NewRooks = 0;
+	for (int j = 0; j < BoardSize; j++) {
+		for (int i = 0; i < BoardSize; i++) {
+			if (Board[i][j] == 0) {
+				int k = i + 1;
+				int FreeNeigbours = 0;
+				int NeighbourRows[2];
+				while (k < BoardSize) {
+					if (Board[k][j] == 0) {
+						FreeNeigbours++;
+						if (FreeNeigbours == 1) {
+							NeighbourRows[0] = k;
+						}
+						if (FreeNeigbours == 2) {
+							NeighbourRows[1] = k;
+						}
+					}
+					if (Board[k][j] == INT_MAX) {
+						break;
+					}
+					k++;
+				}
+				if (FreeNeigbours == 2) {
+					NewRooks += SearchForMatchingThreeCols(i, j, NeighbourRows[0], NeighbourRows[1]);
+				}
 				j = k;
 			}
 		}
@@ -604,7 +891,7 @@ void CHarmlessRooks::FindAndPlaceTwoPairsVertical(int *UndoubtedX, int *Undoubte
 					k++;
 				}
 				if (!ThreeOrMore && TwoFound) {
-					int PairCol = SearchForPairCol(i, j, Pair);
+					int PairCol = SearchForPairCol(j, i, Pair);
 					if (PairCol >= 0) {
 						PlaceRook(i, j);
 						UndoubtedX[Undoubted] = i;
@@ -692,20 +979,29 @@ bool CHarmlessRooks::CheckForUndoubted(int X, int Y)
 
 int CHarmlessRooks::CheckAndPlaceUndoubtedRooks()
 {
-	int PrevRooks;
+	int PrevRooks, NewRooks;
 	int  PlacedRooks = 0;
 	do {
-		do {
-			PrevRooks = PlacedRooks;
-			PlacedRooks += FindAndPlaceUndoubted();
-		} while (PlacedRooks != PrevRooks);
 		PrevRooks = PlacedRooks;
-		PlacedRooks += FindAndPlaceTwoPairsHorizontal();
-		PlacedRooks += FindAndPlaceTwoPairsVertical();
+		do {
+			NewRooks = FindAndPlaceUndoubted();
+			PlacedRooks += NewRooks;
+		} while (NewRooks != 0);
+		do {
+			NewRooks = FindAndPlaceTwoPairsHorizontal();
+			PlacedRooks += NewRooks;
+		} while (NewRooks != 0);
+		do {
+			NewRooks = FindAndPlaceTwoPairsVertical();
+			PlacedRooks += NewRooks;
+		} while (NewRooks != 0);
+		PlacedRooks += FindAndPlaceThreeMatchingHorizontal();
+		PlacedRooks += FindAndPlaceThreeMatchingVertical();
 	} while (PlacedRooks != PrevRooks);
 	do {
 		PrevRooks = PlacedRooks;
-		PlacedRooks += FindAndPlaceTripleHorizontal();
+//		PlacedRooks += FindAndPlaceTripleHorizontal();
+//		PlacedRooks += FindAndPlaceTripleVertical();
 	} while (PlacedRooks != PrevRooks);
 	return PlacedRooks;
 }
